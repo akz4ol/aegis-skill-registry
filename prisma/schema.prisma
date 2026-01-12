@@ -1,0 +1,344 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Core Skill entity - immutable once created
+model Skill {
+  id              String          @id @default(cuid())
+  name            String
+  version         String
+  description     String?
+  contentHash     String          @unique
+  sourceType      SourceType
+  sourceUrl       String?
+  rawArtifactPath String
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  publishedAt     DateTime?
+  status          SkillStatus     @default(DRAFT)
+  authorId        String?
+  author          User?           @relation(fields: [authorId], references: [id])
+  sbom            SkillSBOM?
+  riskAnalysis    RiskAnalysis?
+  signatures      SkillSignature[]
+  approvals       ApprovalRecord[]
+  provenance      ProvenanceEntry[]
+  policyResults   PolicyResult[]
+  executions      SkillExecution[]
+  tags            SkillTag[]
+
+  @@unique([name, version])
+  @@index([status])
+  @@index([createdAt])
+}
+
+enum SourceType {
+  GIT
+  ARCHIVE
+  LOCAL
+}
+
+enum SkillStatus {
+  DRAFT
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+  DEPRECATED
+  REVOKED
+}
+
+// Skill Software Bill of Materials
+model SkillSBOM {
+  id               String         @id @default(cuid())
+  skillId          String         @unique
+  skill            Skill          @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  sbomHash         String
+  permissions      Permission[]
+  networkHints     NetworkHint[]
+  fileSystemUsage  FileSystemUsage[]
+  shellPatterns    ShellPattern[]
+  dependencies     Dependency[]
+  generatedAt      DateTime       @default(now())
+  schemaVersion    String         @default("1.0.0")
+}
+
+model Permission {
+  id          String    @id @default(cuid())
+  sbomId      String
+  sbom        SkillSBOM @relation(fields: [sbomId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  required    Boolean   @default(true)
+  scope       String?
+}
+
+model NetworkHint {
+  id          String    @id @default(cuid())
+  sbomId      String
+  sbom        SkillSBOM @relation(fields: [sbomId], references: [id], onDelete: Cascade)
+  protocol    String
+  host        String?
+  port        Int?
+  direction   String    // INBOUND, OUTBOUND, BOTH
+  description String?
+}
+
+model FileSystemUsage {
+  id          String    @id @default(cuid())
+  sbomId      String
+  sbom        SkillSBOM @relation(fields: [sbomId], references: [id], onDelete: Cascade)
+  path        String
+  operation   String    // READ, WRITE, DELETE, EXECUTE
+  required    Boolean   @default(false)
+  description String?
+}
+
+model ShellPattern {
+  id          String    @id @default(cuid())
+  sbomId      String
+  sbom        SkillSBOM @relation(fields: [sbomId], references: [id], onDelete: Cascade)
+  pattern     String
+  riskLevel   RiskLevel
+  description String?
+}
+
+model Dependency {
+  id          String    @id @default(cuid())
+  sbomId      String
+  sbom        SkillSBOM @relation(fields: [sbomId], references: [id], onDelete: Cascade)
+  name        String
+  version     String
+  type        String    // npm, pip, system, etc.
+  license     String?
+}
+
+// Risk Analysis
+model RiskAnalysis {
+  id              String       @id @default(cuid())
+  skillId         String       @unique
+  skill           Skill        @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  riskScore       Int          // 0-100
+  riskLevel       RiskLevel
+  signals         RiskSignal[]
+  analyzedAt      DateTime     @default(now())
+  analyzerVersion String
+}
+
+enum RiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+model RiskSignal {
+  id           String       @id @default(cuid())
+  analysisId   String
+  analysis     RiskAnalysis @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+  signalType   String
+  severity     RiskLevel
+  title        String
+  description  String
+  location     String?
+  remediation  String?
+}
+
+// Policy DSL
+model Policy {
+  id              String         @id @default(cuid())
+  name            String         @unique
+  version         String
+  description     String?
+  organizationId  String
+  organization    Organization   @relation(fields: [organizationId], references: [id])
+  rules           PolicyRule[]
+  isActive        Boolean        @default(true)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  createdById     String
+  createdBy       User           @relation(fields: [createdById], references: [id])
+
+  @@unique([name, version])
+}
+
+model PolicyRule {
+  id          String    @id @default(cuid())
+  policyId    String
+  policy      Policy    @relation(fields: [policyId], references: [id], onDelete: Cascade)
+  name        String
+  condition   String    // JSON-encoded condition DSL
+  action      PolicyAction
+  priority    Int       @default(0)
+  message     String?
+}
+
+enum PolicyAction {
+  ALLOW
+  DENY
+  REQUIRE_APPROVAL
+  WARN
+}
+
+model PolicyResult {
+  id          String       @id @default(cuid())
+  skillId     String
+  skill       Skill        @relation(fields: [skillId], references: [id])
+  policyName  String
+  version     String
+  result      PolicyAction
+  violations  String?      // JSON array of violations
+  evaluatedAt DateTime     @default(now())
+  isDryRun    Boolean      @default(false)
+}
+
+// Approval Workflow
+model ApprovalRecord {
+  id              String         @id @default(cuid())
+  skillId         String
+  skill           Skill          @relation(fields: [skillId], references: [id])
+  skillHash       String         // Bound to specific content hash
+  policyVersion   String
+  status          ApprovalStatus
+  requestedAt     DateTime       @default(now())
+  decidedAt       DateTime?
+  requestedById   String
+  requestedBy     User           @relation("ApprovalRequester", fields: [requestedById], references: [id])
+  decidedById     String?
+  decidedBy       User?          @relation("ApprovalDecider", fields: [decidedById], references: [id])
+  reason          String?
+  expiresAt       DateTime?
+
+  @@index([skillId, status])
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  EXPIRED
+  INVALIDATED
+}
+
+// Provenance & Signing
+model SkillSignature {
+  id            String   @id @default(cuid())
+  skillId       String
+  skill         Skill    @relation(fields: [skillId], references: [id])
+  signatureHash String
+  algorithm     String
+  publicKeyId   String
+  signedAt      DateTime @default(now())
+  signedById    String
+  signedBy      User     @relation(fields: [signedById], references: [id])
+  verified      Boolean  @default(false)
+  verifiedAt    DateTime?
+}
+
+model ProvenanceEntry {
+  id          String          @id @default(cuid())
+  skillId     String
+  skill       Skill           @relation(fields: [skillId], references: [id])
+  eventType   ProvenanceEvent
+  metadata    String          // JSON
+  createdAt   DateTime        @default(now())
+  actorId     String?
+  actor       User?           @relation(fields: [actorId], references: [id])
+
+  @@index([skillId, createdAt])
+}
+
+enum ProvenanceEvent {
+  IMPORTED
+  ANALYZED
+  POLICY_EVALUATED
+  APPROVAL_REQUESTED
+  APPROVED
+  REJECTED
+  SIGNED
+  INSTALLED
+  EXECUTED
+  REVOKED
+}
+
+// Observability
+model SkillExecution {
+  id              String   @id @default(cuid())
+  skillId         String
+  skill           Skill    @relation(fields: [skillId], references: [id])
+  traceId         String
+  spanId          String
+  organizationId  String
+  userId          String?
+  startedAt       DateTime
+  endedAt         DateTime?
+  status          String
+  metadata        String?  // JSON - policy context, permissions used
+}
+
+// User & Organization
+model User {
+  id                  String           @id @default(cuid())
+  email               String           @unique
+  name                String?
+  role                UserRole         @default(USER)
+  organizationId      String?
+  organization        Organization?    @relation(fields: [organizationId], references: [id])
+  createdAt           DateTime         @default(now())
+  skills              Skill[]
+  policies            Policy[]
+  approvalRequests    ApprovalRecord[] @relation("ApprovalRequester")
+  approvalDecisions   ApprovalRecord[] @relation("ApprovalDecider")
+  signatures          SkillSignature[]
+  provenanceActions   ProvenanceEntry[]
+}
+
+enum UserRole {
+  USER
+  DEVELOPER
+  SECURITY_REVIEWER
+  ADMIN
+  SUPER_ADMIN
+}
+
+model Organization {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  slug      String   @unique
+  settings  String?  // JSON
+  createdAt DateTime @default(now())
+  users     User[]
+  policies  Policy[]
+}
+
+model SkillTag {
+  id      String @id @default(cuid())
+  skillId String
+  skill   Skill  @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  name    String
+
+  @@unique([skillId, name])
+  @@index([name])
+}
+
+// Audit Log (append-only)
+model AuditLog {
+  id          String   @id @default(cuid())
+  timestamp   DateTime @default(now())
+  actorId     String?
+  actorType   String   // USER, SYSTEM, API
+  action      String
+  resourceType String
+  resourceId  String
+  metadata    String?  // JSON
+  ipAddress   String?
+  userAgent   String?
+
+  @@index([timestamp])
+  @@index([resourceType, resourceId])
+  @@index([actorId])
+}

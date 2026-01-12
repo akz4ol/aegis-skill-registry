@@ -1,0 +1,39 @@
+title: "[Q&A] "
+labels:
+  - question
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Ask questions about AegisSkill Registry!
+
+  - type: textarea
+    id: question
+    attributes:
+      label: Your Question
+      description: What would you like to know?
+    validations:
+      required: true
+
+  - type: dropdown
+    id: topic
+    attributes:
+      label: Topic
+      options:
+        - Getting Started
+        - Installation
+        - Configuration
+        - API Usage
+        - Policy DSL
+        - SBOM/Security
+        - Deployment
+        - Troubleshooting
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional Context
+      description: Any additional information that might help answer your question

@@ -1,0 +1,37 @@
+title: "[Idea] "
+labels:
+  - idea
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Share your ideas for improving AegisSkill Registry!
+
+  - type: textarea
+    id: idea
+    attributes:
+      label: Your Idea
+      description: Describe your idea in detail
+      placeholder: I think we should...
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Why is this idea important? What problem does it solve?
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Security
+        - UX/UI
+        - Performance
+        - Integration
+        - Documentation
+        - Other
+    validations:
+      required: true
