@@ -2,8 +2,17 @@
 const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  output: 'standalone',
   experimental: {
     serverComponentsExternalPackages: ['simple-git', 'sharp'],
+  },
+  // Prevent build trace stack overflow
+  outputFileTracingExcludes: {
+    '*': [
+      'node_modules/@swc/core-linux-x64-gnu',
+      'node_modules/@swc/core-linux-x64-musl',
+      'node_modules/@esbuild/linux-x64',
+    ],
   },
   headers: async () => [
     {
