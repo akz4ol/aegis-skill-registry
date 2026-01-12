@@ -2,9 +2,11 @@
 
 > Governed registry and marketplace for AI agent skills with security manifests, policy gating, provenance, and observability linkage.
 
-[![CI](https://github.com/YOUR_USERNAME/aegis-skill-registry/actions/workflows/ci.yml/badge.svg)](https://github.com/YOUR_USERNAME/aegis-skill-registry/actions/workflows/ci.yml)
-[![Deploy](https://github.com/YOUR_USERNAME/aegis-skill-registry/actions/workflows/deploy.yml/badge.svg)](https://github.com/YOUR_USERNAME/aegis-skill-registry/actions/workflows/deploy.yml)
+[![CI](https://github.com/akz4ol/aegis-skill-registry/actions/workflows/ci.yml/badge.svg)](https://github.com/akz4ol/aegis-skill-registry/actions/workflows/ci.yml)
+[![Deploy](https://github.com/akz4ol/aegis-skill-registry/actions/workflows/deploy.yml/badge.svg)](https://github.com/akz4ol/aegis-skill-registry/actions/workflows/deploy.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+**Live Demo:** [https://aegis-skill-registry.vercel.app](https://aegis-skill-registry.vercel.app)
 
 ## North Star
 
@@ -62,7 +64,7 @@
 
 ```bash
 # Clone the repository
-git clone https://github.com/YOUR_USERNAME/aegis-skill-registry.git
+git clone https://github.com/akz4ol/aegis-skill-registry.git
 cd aegis-skill-registry
 
 # Install dependencies
