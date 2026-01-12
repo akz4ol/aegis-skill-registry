@@ -4,7 +4,7 @@ export interface Policy {
   id: string;
   name: string;
   version: string;
-  description?: string;
+  description?: string | null;
   organizationId: string;
   rules: PolicyRule[];
   isActive: boolean;
@@ -20,7 +20,7 @@ export interface PolicyRule {
   condition: PolicyCondition;
   action: PolicyAction;
   priority: number;
-  message?: string;
+  message?: string | null;
 }
 
 export interface PolicyCondition {

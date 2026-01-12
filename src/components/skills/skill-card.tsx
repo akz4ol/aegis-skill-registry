@@ -72,7 +72,9 @@ export function SkillCard({
                   {name}
                 </h3>
                 {isVerified && (
-                  <Shield className="h-4 w-4 text-blue-600" title="Verified" />
+                  <span title="Verified">
+                    <Shield className="h-4 w-4 text-blue-600" />
+                  </span>
                 )}
               </div>
               <span className="text-sm text-muted-foreground">v{version}</span>
